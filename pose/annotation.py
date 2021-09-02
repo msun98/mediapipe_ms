@@ -75,51 +75,51 @@ def draw_hands_landmarks(
         landmark_z = landmark.z
 
         landmark_point.append((landmark_x, landmark_y))
-
+        # print(landmark_point[0])
         if index == 0:  # 손목 1
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 1:  # 손목 2
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 2:  # 엄지 손가락 : 밑
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 3:  # 엄지 : 제 1 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 1:  # 손목 2
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 2:  # 엄지 손가락 : 밑
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 3:  # 엄지 : 제 1 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
         if index == 4:  # 엄지 손가락 : 손가락
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
             cv.circle(image, (landmark_x, landmark_y), 12, (0, 255, 0), 2)
-        if index == 5:   # 집게 손가락 : 밑
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 6:  # 검지 : 제 2 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 7:  # 검지 : 제 1 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 5:   # 집게 손가락 : 밑
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 6:  # 검지 : 제 2 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 7:  # 검지 : 제 1 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
         if index == 8:  # 집게 손가락 : 손가락
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
             cv.circle(image, (landmark_x, landmark_y), 12, (0, 255, 0), 2)
-        if index == 9:   # 중지 : 기지
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 10:  # 중지 : 제 2 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 11:   # 중지 : 제 1 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 9:   # 중지 : 기지
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 10:  # 중지 : 제 2 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 11:   # 중지 : 제 1 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
         if index == 12:  # 중지 : 손가락
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
             cv.circle(image, (landmark_x, landmark_y), 12, (0, 255, 0), 2)
-        if index == 13:  # 약지 ：기지 
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 14:  # 약지 ：제 2 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 15:  # 약지：제 1 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 13:  # 약지 ：기지 
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 14:  # 약지 ：제 2 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 15:  # 약지：제 1 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
         if index == 16:  # 약지：밑
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
             cv.circle(image, (landmark_x, landmark_y), 12, (0, 255, 0), 2)
-        if index == 17:  # 새끼：기지 
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 18:  # 새끼：제 2 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 19:  # 새끼：제 1 관절
-            cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 17:  # 새끼：기지 
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 18:  # 새끼：제 2 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
+        # if index == 19:  # 새끼：제 1 관절
+        #     cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
         if index == 20:  # 새끼：밑
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
             cv.circle(image, (landmark_x, landmark_y), 12, (0, 255, 0), 2)
@@ -130,7 +130,7 @@ def draw_hands_landmarks(
         cv.putText(image, handedness_str, (cx - 6, cy + 6),
                    cv.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2, cv.LINE_AA)
 
-    return image
+    return image,landmark_point[4],landmark_point[8],landmark_point[12],landmark_point[16],landmark_point[20]
 
 
 def draw_face_landmarks(image, landmarks):

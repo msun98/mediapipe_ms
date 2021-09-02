@@ -508,71 +508,71 @@ def draw_pose_landmarks(
         if landmark.visibility < visibility_th:
             continue
 
-        if index == 0:  # 鼻
+        if index == 0:  # 코
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 1:  # 右目：目頭
+        if index == 1:  # 오른쪽 눈 : 눈시울 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 2:  # 右目：瞳
+        if index == 2:  # 오른쪽 눈 눈 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 3:  # 右目：目尻
+        if index == 3:  # 오른쪽 눈 눈초리 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 4:  # 左目：目頭
+        if index == 4:  # 왼쪽 눈 : 눈시울 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 5:  # 左目：瞳
+        if index == 5:  # 왼쪽 눈 눈 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 6:  # 左目：目尻
+        if index == 6:  # 왼쪽 눈 눈초리 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 7:  # 右耳
+        if index == 7:  # 오른쪽 귀 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 8:  # 左耳
+        if index == 8:  # 왼쪽 귀 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 9:  # 口：左端
+        if index == 9:  # 오른쪽 입 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 10:  # 口：左端
+        if index == 10:  # 왼쪽 입 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 11:  # 右肩
+        if index == 11:  # 오른쪽 어깨 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 12:  # 左肩
+        if index == 12:  # 왼쪽 어깨 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 13:  # 右肘
+        if index == 13:  # 오른쪽 팔꿈치 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 14:  # 左肘
+        if index == 14:  # 왼쪽 팔꿈치 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 15:  # 右手首
+        if index == 15:  # 오른쪽 손목 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 16:  # 左手首
+        if index == 16:  # 왼쪽 손목 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 17:  # 右手1(外側端)
+        if index == 17:  # 오른쪽 손 1 (외부 끝)
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 18:  # 左手1(外側端)
+        if index == 18:  # 왼쪽 손 1 (외부 끝)
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 19:  # 右手2(先端)
+        if index == 19:  # 오른쪽 손 2 (끝)
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 20:  # 左手2(先端)
+        if index == 20:  # 왼쪽 손 2 (끝)
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 21:  # 右手3(内側端)
+        if index == 21:  # 왼쪽 손 3 (안쪽 끝)
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 22:  # 左手3(内側端)
+        if index == 22:  # 오른쪽 손 3 (안쪽 끝)
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 23:  # 腰(右側)
+        if index == 23:  # 오른쪽 허리 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 24:  # 腰(左側)
+        if index == 24:  # 왼쪽 허리 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 25:  # 右ひざ
+        if index == 25:  # 오른쪽 무릎 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 26:  # 左ひざ
+        if index == 26:  # 왼쪽 무릎 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 27:  # 右足首
+        if index == 27:  # 오른쪽 발목 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 28:  # 左足首
+        if index == 28:  # 왼쪽 발목 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 29:  # 右かかと
+        if index == 29:  # 오른쪽 발 뒤꿈치 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 30:  # 左かかと
+        if index == 30:  # 왼쪽 발 뒤꿈치 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 31:  # 右つま先
+        if index == 31:  # 오른쪽 발가락 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
-        if index == 32:  # 左つま先
+        if index == 32:  # 왼쪽 발가락 
             cv.circle(image, (landmark_x, landmark_y), 5, (0, 255, 0), 2)
 
         # if not upper_body_only:
