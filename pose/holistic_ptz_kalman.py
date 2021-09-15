@@ -20,14 +20,52 @@ w_calibration, h_calibration = 1527, 833
 mid_x, mid_y = w_calibration/2, h_calibration/2
 neck_x,neck_y = 0,0 
 point_flag = True
+# point_flag = False
 lock = threading.Lock()
 end_time = 0
-pp, tp = 0, 0
+dt = 1/20
+sigmaX, sigmaA = 0.01, 0.0015
+cpx, cpy = 0, 0
+
+
+F = [ [1, dt, 0.5*dt**2, 0, 0, 0],
+      [0, 1, dt, 0, 0, 0],
+      [0, 0, 1, 0, 0, 0],
+      [0, 0, 0, 1, dt, 0.5*dt**2],
+      [0, 0, 0, 0, 1, dt],
+      [0, 0, 0, 0, 0, 1]]
+
+H = [ [1, 0, 0, 0, 0, 0],
+      [0, 0, 0, 1, 0, 0]]
+
+Q = [ [dt**4/4, dt**3/2, dt**2/2, 0, 0, 0],
+      [dt**3/2, dt**2, dt, 0, 0, 0],
+      [dt**2/2, dt, 1, 0, 0, 0],
+      [0, 0, 0, dt**4/4, dt**3/2, dt**2/2],
+      [0, 0, 0, dt**3/2,dt**2, dt],
+      [0, 0, 0, dt**2/2, dt, 1]]
+
+R = [[1,0],[0,1]]
+
+
+kalman = cv2.KalmanFilter(6, 2)   #  state [ x, vx, ax, y, vy, ay]
+kalman.transitionMatrix = np.array(F, np.float32)
+kalman.measurementMatrix = np.array(H, np.float32) # System measurement matrix
+kalman.processNoiseCov = np.array(Q, np.float32)*sigmaA**2 # System process noise covariance
+kalman.measurementNoiseCov = np.array(R, np.float32) * sigmaX**2
+
+neck_x, neck_y = w_calibration/2, h_calibration/2
+
+kalman.statePre = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32)
+kalman.statePost = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32)
+
+
 
 def goto_human():
-    global point_flag, neck_x, neck_y, end_time, pp, tp
+    global point_flag,cpx, cpy,neck_x,neck_y,end_time
     angle_of_x_old, angle_of_y_old = 0, 0
-    pp_old, tp_old = 0,0
+    pp, tp = 0, 0
+    pp_old, tp_old=0,0
     pan = 0
     predict_x_old = 0
     start = time.time()
@@ -40,57 +78,53 @@ def goto_human():
                 moveTo(int(pan*100), int(tilt*100), 0, 0)
 
             else:
-                pan, tilt = np.rad2deg(calculate_alpha(neck_x,0)),np.rad2deg(calculate_beta(neck_y,0))
-
+                # view2sphere(cpx, cpy, 0)
+                # pan, tilt = camera2world()
+                pan, tilt = np.rad2deg(calculate_alpha(cpx,0)),np.rad2deg(calculate_beta(cpy,0))
                 # TO CALCULATE OF MOTOR SPEED
+                # end = 0.01
                 if end_time == 0:
                     end_time = 0.05
-
+                # print(end_time)
+                # end_time = round(end_time,3)
+                # print(np.abs(pan-angle_of_x_old))
                 angular_speed_x, angular_speed_y = round((np.abs(pan-angle_of_x_old)/end_time),3),\
                                                    round((np.abs(tilt-angle_of_y_old)/end_time),3) # 각속도 계산
 
-                pp, tp = int(0.825 * np.abs(angular_speed_x)), int(0.825 * np.abs(angular_speed_y))
-                # print(pp,tp)
+                pp, tp = int(0.825 * np.abs(angular_speed_x))*6, int(0.825 * np.abs(angular_speed_y))*2
 
-                if np.abs(pp_old - pp) != 0 or np.abs(tp_old - tp) != 0:
-
-                    if pp != 0 or tp != 0:
-                        print('not 0:',pp,tp)
-
-                        if pan < 0:
-                            # print('\npan < 0\n')
-                            if tilt > 0:
-                                move_pan_tilt('right', 'up', pp, tp)
-                            else:
-                                move_pan_tilt('right', 'down', pp, tp)
+                if pan < 0:
+                    # print('\npan < 0\n')
+                    if tilt > 0:
+                        move_pan_tilt('right', 'up', pp, tp)
 
 
-                        elif pan > 0:
-                            # print('\npan > 0\n')
-                            if tilt > 0:
-                                move_pan_tilt('left', 'up',pp, tp)                            
-
-                            else:
-                                move_pan_tilt('left', 'down', pp, tp)
-
-
-                        elif np.abs(pan - w_calibration/2) > 20:
-                            moveTo(int(pan*100), int(tilt*100), 0, 0)
-                            print('\nstop\n')
-                    
-                        # if pp == 0 or tp == 0:
-                        #     print('stop')
-                        # print('not 0:',pp,tp)
-                        pp_old, tp_old = pp, tp
-                        angle_of_x_old, angle_of_y_old = pan, tilt
-                            # print(pp_old,tp_old)
                     else:
-                        print('0')
+                        if pp == 0 or tp == 0:
+                            print('pass')
+                            pass
 
+                        move_pan_tilt('right', 'down', pp_old, tp_old)
 
-                else:
-                    print('이전값과 차이없음')
+                elif pan > 0:
+                    # print('\npan > 0\n')
+                    if tilt > 0:
+                        move_pan_tilt('left', 'up', pp_old, tp_old)
 
+                    else:
+
+                        if pp == 0 or tp == 0:
+                            print('pass')
+                            pass
+                        move_pan_tilt('left', 'down', pp_old, tp_old)
+
+                elif np.abs(pan- w_calibration/2) > 10:
+                    moveTo(int(pan*100), int(tilt*100), 0, 0)
+                    # print('\nstop\n')
+
+                
+                pp_old, tp_old = pp, tp
+                angle_of_x_old, angle_of_y_old = pan, tilt
 
         lock.release()
 
@@ -181,7 +215,7 @@ if __name__ == '__main__':
 
             if i == 1:
                 goto_origin(pp,ps,tp,ts)
-                time.sleep(0.3)
+                time.sleep(3)
                 i = 2
 
             image = calibration(image, w_calibration, h_calibration)
@@ -199,24 +233,33 @@ if __name__ == '__main__':
             pose_landmarks = results.pose_landmarks
             if pose_landmarks is not None:
                 # 경계 사각형의 계산
+                brect = calc_bounding_rect(debug_image, pose_landmarks)
                 # 그리기 
                 debug_image = draw_pose_landmarks(
                     debug_image,
                     pose_landmarks,
                     # upper_body_only,
                 )
-                pose = debug_image
-                right_sholder_x,right_sholder_y,left_sholder_x,left_sholder_y = pose[1],pose[2],pose[3],pose[4]
+                pose = draw_bounding_rect(use_brect, debug_image, brect)
+                debug_image = pose[0]
+                right_sholder_x,right_sholder_y,left_sholder_x,left_sholder_y=pose[1],pose[2],pose[3],pose[4]
 
                 # 목 위치 
-                # point_flag = True
+                point_flag = True
                 # print(point_flag)
                 neck_x,neck_y = int((pose[1]+pose[3])/2) ,int((pose[2]+pose[4])/2) 
-                point_flag = True
                 end_time = time.time()-start_camera
                 # print(end_time)
-                debug_image = cv.circle(pose[0], (neck_x, neck_y), 5, (0, 0, 255), 2)
+                cv.circle(debug_image, (neck_x, neck_y), 5, (0, 0, 255), 2)
                 # point_flag = True
+
+            current_prediction = kalman.predict() # start kalman filter <predict>
+            cpx, cpy = int(current_prediction[0]), int(current_prediction[3])
+            # if np.abs(cpy-cy) > 500:
+            #     cpy = int(h_calibration/2)
+            current_measurement = np.array([neck_x, neck_y], np.float32)
+            kalman.correct(current_measurement)
+            debug_image = cv2.circle(debug_image, (cpx, cpy), 8, (0, 0, 255), -1)
 
             
             # Hands ###############################################################
@@ -237,7 +280,7 @@ if __name__ == '__main__':
                     # upper_body_only,
                     'R',
                 )
-                debug_image = debug_image[0]
+                debug_image = draw_bounding_rect(use_brect, debug_image, brect)[0]
             # 오른손 
             if right_hand_landmarks is not None:
                 # 손바닥 중심 계산 
@@ -253,13 +296,13 @@ if __name__ == '__main__':
                     # upper_body_only,
                     'L',
                 )
-                
-                debug_image = debug_image[0]
+                draw = draw_bounding_rect(use_brect, debug_image, brect)
+                debug_image = draw[0]
 
-            debug_image = cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
-                       cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
+            # cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
+            #            cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
             # 화면 반영  #############################################################
-            debug_image = cv.imshow('MediaPipe Holistic', debug_image)
+            cv.imshow('MediaPipe Holistic', debug_image)
 
 
             # 키처리 (ESC：종료) #################################################

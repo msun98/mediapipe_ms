@@ -86,7 +86,7 @@ def move_pan_tilt(_pan,_tilt,pan_speed,tilt_speed): # moving same time pan, tilt
     #     head=head+'&tilt=stop'
     else:
         return
-    # print(head)
+    print(head)
     try:
         #pass
         resp = requests.get(head,timeout=1)

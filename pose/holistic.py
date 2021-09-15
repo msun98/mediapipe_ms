@@ -117,7 +117,7 @@ def main():
         pose_landmarks = results.pose_landmarks
         if pose_landmarks is not None:
             # 外接矩形の計算
-            brect = calc_bounding_rect(debug_image, pose_landmarks)
+            # brect = calc_bounding_rect(debug_image, pose_landmarks)
             # 描画
             debug_image = draw_pose_landmarks(
                 debug_image,
@@ -143,7 +143,7 @@ def main():
             # 手の平重心計算
             cx, cy = calc_palm_moment(debug_image, left_hand_landmarks)
             # 外接矩形の計算
-            brect = calc_bounding_rect(debug_image, left_hand_landmarks)
+            # brect = calc_bounding_rect(debug_image, left_hand_landmarks)
             # 描画
             debug_image = draw_hands_landmarks(
                 debug_image,
@@ -159,7 +159,7 @@ def main():
             # 手の平重心計算
             cx, cy = calc_palm_moment(debug_image, right_hand_landmarks)
             # 外接矩形の計算
-            brect = calc_bounding_rect(debug_image, right_hand_landmarks)
+            # brect = calc_bounding_rect(debug_image, right_hand_landmarks)
             # 描画
             debug_image = draw_hands_landmarks(
                 debug_image,

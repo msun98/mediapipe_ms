@@ -24,76 +24,6 @@ lock = threading.Lock()
 end_time = 0
 pp, tp = 0, 0
 
-def goto_human():
-    global point_flag, neck_x, neck_y, end_time, pp, tp
-    angle_of_x_old, angle_of_y_old = 0, 0
-    pp_old, tp_old = 0,0
-    pan = 0
-    predict_x_old = 0
-    start = time.time()
-
-    while True:
-        lock.acquire()
-        if point_flag:
-
-            if np.abs(pan-angle_of_x_old) > 500:
-                moveTo(int(pan*100), int(tilt*100), 0, 0)
-
-            else:
-                pan, tilt = np.rad2deg(calculate_alpha(neck_x,0)),np.rad2deg(calculate_beta(neck_y,0))
-
-                # TO CALCULATE OF MOTOR SPEED
-                if end_time == 0:
-                    end_time = 0.05
-
-                angular_speed_x, angular_speed_y = round((np.abs(pan-angle_of_x_old)/end_time),3),\
-                                                   round((np.abs(tilt-angle_of_y_old)/end_time),3) # 각속도 계산
-
-                pp, tp = int(0.825 * np.abs(angular_speed_x)), int(0.825 * np.abs(angular_speed_y))
-                # print(pp,tp)
-
-                if np.abs(pp_old - pp) != 0 or np.abs(tp_old - tp) != 0:
-
-                    if pp != 0 or tp != 0:
-                        print('not 0:',pp,tp)
-
-                        if pan < 0:
-                            # print('\npan < 0\n')
-                            if tilt > 0:
-                                move_pan_tilt('right', 'up', pp, tp)
-                            else:
-                                move_pan_tilt('right', 'down', pp, tp)
-
-
-                        elif pan > 0:
-                            # print('\npan > 0\n')
-                            if tilt > 0:
-                                move_pan_tilt('left', 'up',pp, tp)                            
-
-                            else:
-                                move_pan_tilt('left', 'down', pp, tp)
-
-
-                        elif np.abs(pan - w_calibration/2) > 20:
-                            moveTo(int(pan*100), int(tilt*100), 0, 0)
-                            print('\nstop\n')
-                    
-                        # if pp == 0 or tp == 0:
-                        #     print('stop')
-                        # print('not 0:',pp,tp)
-                        pp_old, tp_old = pp, tp
-                        angle_of_x_old, angle_of_y_old = pan, tilt
-                            # print(pp_old,tp_old)
-                    else:
-                        print('0')
-
-
-                else:
-                    print('이전값과 차이없음')
-
-
-        lock.release()
-
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -132,9 +62,6 @@ if __name__ == '__main__':
     # main()
     # 인자분석 #################################################################
     args = get_args()
-    cap = initialize() # 화면을 받아옴.
-    on_screen_display()
-    i = 1
 
     # upper_body_only = args.upper_body_only
     model_complexity = args.model_complexity
@@ -144,8 +71,7 @@ if __name__ == '__main__':
     use_brect = args.use_brect
 
     # 카메라 준비 ###############################################################
-    ret_val, image = cap.read()
-    video = calibration(image, w_calibration, h_calibration)
+    cap = cv.VideoCapture(0)
 
     # 모델로드 #############################################################
     mp_holistic = mp.solutions.holistic
@@ -156,15 +82,6 @@ if __name__ == '__main__':
         min_tracking_confidence=min_tracking_confidence,
     )
 
-    initial_position = get_position()
-    if initial_position != (0, 0, 0):
-        goto_origin(pp,ps,tp,ts)
-        time.sleep(1)
-
-    human = threading.Thread(target=goto_human)
-    human.daemon = True  # 프로그램 종료시 즉시 종료.
-    human.start()
-
     # FPS측정 모듈 ########################################################
     cvFpsCalc = CvFpsCalc(buffer_len=10)
 
@@ -172,19 +89,12 @@ if __name__ == '__main__':
         if cap.isOpened():
             display_fps = cvFpsCalc.get()
 
-            # start_camera = time.time()
-
             # 카메라 캡쳐 #####################################################
             ret, image = cap.read()
             if not ret:
                 break
 
-            if i == 1:
-                goto_origin(pp,ps,tp,ts)
-                time.sleep(0.3)
-                i = 2
-
-            image = calibration(image, w_calibration, h_calibration)
+            image = cv.flip(image, 1)
             debug_image = copy.deepcopy(image)
 
             start_camera = time.time()
@@ -198,13 +108,14 @@ if __name__ == '__main__':
             # Pose ###############################################################
             pose_landmarks = results.pose_landmarks
             if pose_landmarks is not None:
-                # 경계 사각형의 계산
+
                 # 그리기 
                 debug_image = draw_pose_landmarks(
                     debug_image,
                     pose_landmarks,
                     # upper_body_only,
                 )
+                # pose = draw_bounding_rect(use_brect, debug_image, brect)
                 pose = debug_image
                 right_sholder_x,right_sholder_y,left_sholder_x,left_sholder_y = pose[1],pose[2],pose[3],pose[4]
 
@@ -237,7 +148,24 @@ if __name__ == '__main__':
                     # upper_body_only,
                     'R',
                 )
+                
+                if np.abs((debug_image[5][1]+debug_image[2][1])-(debug_image[3][1]+debug_image[4][1])) < 10:
+                    # (검지 + 새끼) - (중지 + 약지)
+                    print('손 접힘')
+
+                    if debug_image[1][0]-debug_image[2][0] < 0:
+                        print('왼쪽\n')
+
+                    else:
+                        if np.abs(debug_image[1][1]-cy) < 50:
+                            print('손 다 접힘\n')
+                        else:
+                            print('오른쪽\n')
+
+                else:
+                    print('손펼침')
                 debug_image = debug_image[0]
+
             # 오른손 
             if right_hand_landmarks is not None:
                 # 손바닥 중심 계산 
@@ -253,24 +181,19 @@ if __name__ == '__main__':
                     # upper_body_only,
                     'L',
                 )
-                
                 debug_image = debug_image[0]
 
-            debug_image = cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
+            cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
                        cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
             # 화면 반영  #############################################################
-            debug_image = cv.imshow('MediaPipe Holistic', debug_image)
+            cv.imshow('MediaPipe Holistic', debug_image)
 
 
             # 키처리 (ESC：종료) #################################################
             key = cv.waitKey(1)
             if key == 27:  # ESC
-                goto_origin(pp,ps,tp,ts)
                 time.sleep(1)
                 break
-
-            # # 화면 반영  #############################################################
-            # cv.imshow('MediaPipe Holistic', debug_image)
 
     cap.release()
     cv.destroyAllWindows()
