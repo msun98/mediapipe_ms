@@ -46,146 +46,6 @@ def get_args():
     return args
 
 
-def main():
-    # 引数解析 #################################################################
-    args = get_args()
-
-    cap_device = args.device
-    cap_width = args.width
-    cap_height = args.height
-
-    # upper_body_only = args.upper_body_only
-    model_complexity = args.model_complexity
-    min_detection_confidence = args.min_detection_confidence
-    min_tracking_confidence = args.min_tracking_confidence
-
-    use_brect = args.use_brect
-    plot_world_landmark = args.plot_world_landmark
-
-    # カメラ準備 ###############################################################
-    cap = cv.VideoCapture(cap_device)
-    cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
-    cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
-
-    # モデルロード #############################################################
-    mp_holistic = mp.solutions.holistic
-    holistic = mp_holistic.Holistic(
-        # upper_body_only=upper_body_only,
-        model_complexity=model_complexity,
-        min_detection_confidence=min_detection_confidence,
-        min_tracking_confidence=min_tracking_confidence,
-    )
-
-    # FPS計測モジュール ########################################################
-    cvFpsCalc = CvFpsCalc(buffer_len=10)
-
-    # World座標プロット ########################################################
-    if plot_world_landmark:
-        import matplotlib.pyplot as plt
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection="3d")
-        fig.subplots_adjust(left=0.0, right=1, bottom=0, top=1)
-
-    while True:
-        display_fps = cvFpsCalc.get()
-
-        # カメラキャプチャ #####################################################
-        ret, image = cap.read()
-        if not ret:
-            break
-        image = cv.flip(image, 1)  # ミラー表示
-        debug_image = copy.deepcopy(image)
-
-        # 検出実施 #############################################################
-        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-
-        image.flags.writeable = False
-        results = holistic.process(image)
-        image.flags.writeable = True
-
-        # Face Mesh ###########################################################
-        face_landmarks = results.face_landmarks
-        if face_landmarks is not None:
-            # 外接矩形の計算
-            brect = calc_bounding_rect(debug_image, face_landmarks)
-            # 描画
-            debug_image = draw_face_landmarks(debug_image, face_landmarks)
-            debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-
-        # Pose ###############################################################
-        pose_landmarks = results.pose_landmarks
-        if pose_landmarks is not None:
-            # 外接矩形の計算
-            # brect = calc_bounding_rect(debug_image, pose_landmarks)
-            # 描画
-            debug_image = draw_pose_landmarks(
-                debug_image,
-                pose_landmarks,
-                # upper_body_only,
-            )
-            debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-
-        # Pose:World座標プロット #############################################
-        if plot_world_landmark:
-            if results.pose_world_landmarks is not None:
-                plot_world_landmarks(
-                    plt,
-                    ax,
-                    results.pose_world_landmarks,
-                )
-
-        # Hands ###############################################################
-        left_hand_landmarks = results.left_hand_landmarks
-        right_hand_landmarks = results.right_hand_landmarks
-        # 左手
-        if left_hand_landmarks is not None:
-            # 手の平重心計算
-            cx, cy = calc_palm_moment(debug_image, left_hand_landmarks)
-            # 外接矩形の計算
-            # brect = calc_bounding_rect(debug_image, left_hand_landmarks)
-            # 描画
-            debug_image = draw_hands_landmarks(
-                debug_image,
-                cx,
-                cy,
-                left_hand_landmarks,
-                # upper_body_only,
-                'R',
-            )
-            debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-        # 右手
-        if right_hand_landmarks is not None:
-            # 手の平重心計算
-            cx, cy = calc_palm_moment(debug_image, right_hand_landmarks)
-            # 外接矩形の計算
-            # brect = calc_bounding_rect(debug_image, right_hand_landmarks)
-            # 描画
-            debug_image = draw_hands_landmarks(
-                debug_image,
-                cx,
-                cy,
-                right_hand_landmarks,
-                # upper_body_only,
-                'L',
-            )
-            debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-
-        cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
-                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
-
-        # キー処理(ESC：終了) #################################################
-        key = cv.waitKey(1)
-        if key == 27:  # ESC
-            break
-
-        # 画面反映 #############################################################
-        cv.imshow('MediaPipe Holistic Demo', debug_image)
-
-    cap.release()
-    cv.destroyAllWindows()
-
-
 def calc_palm_moment(image, landmarks):
     image_width, image_height = image.shape[1], image.shape[0]
 
@@ -827,4 +687,151 @@ def draw_bounding_rect(use_brect, image, brect):
 
 
 if __name__ == '__main__':
-    main()
+    # 引数解析 #################################################################
+    args = get_args()
+
+    # cap_device = args.device
+    # cap_width = args.width
+    # cap_height = args.height
+
+    # upper_body_only = args.upper_body_only
+    model_complexity = args.model_complexity
+    min_detection_confidence = args.min_detection_confidence
+    min_tracking_confidence = args.min_tracking_confidence
+
+    # use_brect = args.use_brect
+    # plot_world_landmark = args.plot_world_landmark
+
+    # カメラ準備 ###############################################################
+    # cap_device ='lecture1.mp4'
+    # cap = cv.VideoCapture(cap_device)
+    # # cap_width = cap.get(cv.CAP_PROP_FRAME_WIDTH)
+    # # cap_height = cap.get(cv.CAP_PROP_FRAME_HEIGHT)
+
+    # cap_width = cap.set(cv.CAP_PROP_FRAME_WIDTH)
+    # cap_height = cap.set(cv.CAP_PROP_FRAME_HEIGHT)
+    # print(cap_width,cap_height)
+
+
+    # cap = cv.VideoCapture('lecture1.mp4')
+    cap = cv.VideoCapture(0)
+
+    # モデルロード #############################################################
+    mp_holistic = mp.solutions.holistic
+    holistic = mp_holistic.Holistic(
+        # upper_body_only=upper_body_only,
+        model_complexity=model_complexity,
+        min_detection_confidence=min_detection_confidence,
+        min_tracking_confidence=min_tracking_confidence,
+    )
+
+    # FPS計測モジュール ########################################################
+    cvFpsCalc = CvFpsCalc(buffer_len=10)
+
+    # World座標プロット ########################################################
+    # if plot_world_landmark:
+    #     import matplotlib.pyplot as plt
+        
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111, projection="3d")
+    #     fig.subplots_adjust(left=0.0, right=1, bottom=0, top=1)
+
+    while True:
+        display_fps = cvFpsCalc.get()
+
+        # カメラキャプチャ #####################################################
+        ret, image = cap.read()
+        if not ret:
+            break
+        # image = cv.flip(image, 1)  # ミラー表示
+        debug_image = copy.deepcopy(image)
+
+        # 検出実施 #############################################################
+        image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+
+        image.flags.writeable = False
+        results = holistic.process(image)
+        image.flags.writeable = True
+
+        # Face Mesh ###########################################################
+        face_landmarks = results.face_landmarks
+        if face_landmarks is not None:
+            # 外接矩形の計算
+            brect = calc_bounding_rect(debug_image, face_landmarks)
+            # 描画
+            debug_image = draw_face_landmarks(debug_image, face_landmarks)
+            # debug_image = draw_bounding_rect(use_brect, debug_image, brect)
+
+        # Pose ###############################################################
+        pose_landmarks = results.pose_landmarks
+        if pose_landmarks is not None:
+            # 外接矩形の計算
+            # brect = calc_bounding_rect(debug_image, pose_landmarks)
+            # 描画
+            debug_image = draw_pose_landmarks(
+                debug_image,
+                pose_landmarks,
+                # upper_body_only,
+            )
+            # debug_image = draw_bounding_rect(use_brect, debug_image, brect)
+
+        # # Pose:World座標プロット #############################################
+        # if plot_world_landmark:
+        #     if results.pose_world_landmarks is not None:
+        #         plot_world_landmarks(
+        #             plt,
+        #             ax,
+        #             results.pose_world_landmarks,
+        #         )
+
+        # Hands ###############################################################
+        left_hand_landmarks = results.left_hand_landmarks
+        right_hand_landmarks = results.right_hand_landmarks
+        # 左手
+        if left_hand_landmarks is not None:
+            # 手の平重心計算
+            cx, cy = calc_palm_moment(debug_image, left_hand_landmarks)
+            # 外接矩形の計算
+            # brect = calc_bounding_rect(debug_image, left_hand_landmarks)
+            # 描画
+            debug_image = draw_hands_landmarks(
+                debug_image,
+                cx,
+                cy,
+                left_hand_landmarks,
+                # upper_body_only,
+                'R',
+            )
+            # debug_image = draw_bounding_rect(use_brect, debug_image, brect)
+        # 右手
+        if right_hand_landmarks is not None:
+            # 手の平重心計算
+            cx, cy = calc_palm_moment(debug_image, right_hand_landmarks)
+            # 外接矩形の計算
+            # brect = calc_bounding_rect(debug_image, right_hand_landmarks)
+            # 描画
+            debug_image = draw_hands_landmarks(
+                debug_image,
+                cx,
+                cy,
+                right_hand_landmarks,
+                # upper_body_only,
+                'L',
+            )
+            # debug_image = draw_bounding_rect(use_brect, debug_image, brect)
+
+        cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
+                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
+
+        # キー処理(ESC：終了) #################################################
+        key = cv.waitKey(10)
+        if key == 27:  # ESC
+            break
+        # if cv.waitKey(10) >= 0:
+        #     break
+
+        # 画面反映 #############################################################
+        cv.imshow('MediaPipe Holistic Demo', debug_image)
+
+    cap.release()
+    cv.destroyAllWindows()

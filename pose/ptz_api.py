@@ -177,8 +177,8 @@ def moveTo(_pan, _tilt, pan_speed, tilt_speed):
     elif _pan < 0:
         _pan = 36000 - _pan 
 
-    if _tilt > 7000 :
-        _tilt = 7000
+    if _tilt > 3000 :
+        _tilt = 3000
 
     elif _tilt < -1000:
         _tilt = -1000

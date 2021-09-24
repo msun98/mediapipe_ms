@@ -23,8 +23,9 @@ point_flag = True
 lock = threading.Lock()
 end_time = 0
 pp, tp = 0, 0
+
 dt = 1/20
-sigmaX, sigmaA = 0.0001, 0.0015
+sigmaX, sigmaA = 0.01, 0.015
 cpx, cpy = 0, 0
 
 
@@ -54,12 +55,10 @@ kalman.measurementMatrix = np.array(H, np.float32) # System measurement matrix
 kalman.processNoiseCov = np.array(Q, np.float32)*sigmaA**2 # System process noise covariance
 kalman.measurementNoiseCov = np.array(R, np.float32) * sigmaX**2
 
-neck_x, neck_y = 640/2, 360/2
+neck_x, neck_y = w_calibration/2, h_calibration/2
 
 kalman.statePre = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32)
-kalman.statePost = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32) 
-
-
+kalman.statePost = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32)
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -98,11 +97,6 @@ if __name__ == '__main__':
     # main()
     # 인자분석 #################################################################
     args = get_args()
-    r_cx,l_cx = 0,0
-    r_cy,l_cy = 0,0
-    length_old = 0
-    length = 0
-    gesture = 1
 
     # upper_body_only = args.upper_body_only
     model_complexity = args.model_complexity
@@ -112,7 +106,8 @@ if __name__ == '__main__':
     use_brect = args.use_brect
 
     # 카메라 준비 ###############################################################
-    cap = cv.VideoCapture('lecture1.mp4')
+    # cap = cv.VideoCapture('vtest.avi')
+    cap = cv.VideoCapture(0)
 
     # 모델로드 #############################################################
     mp_holistic = mp.solutions.holistic
@@ -124,7 +119,7 @@ if __name__ == '__main__':
     )
 
     # FPS측정 모듈 ########################################################
-    cvFpsCalc = CvFpsCalc(buffer_len=10)
+    cvFpsCalc = CvFpsCalc(buffer_len=30)
 
     while True:
         if cap.isOpened():
@@ -135,7 +130,7 @@ if __name__ == '__main__':
             if not ret:
                 break
 
-            # image = cv.flip(image, 1)
+            image = cv.flip(image, 1)
             debug_image = copy.deepcopy(image)
 
             start_camera = time.time()
@@ -169,8 +164,6 @@ if __name__ == '__main__':
                 # print(end_time)
                 debug_image = cv.circle(pose[0], (neck_x, neck_y), 5, (0, 0, 255), 2)
                 # point_flag = True
-
-
             current_prediction = kalman.predict() # start kalman filter <predict>
             cpx, cpy = int(current_prediction[0]), int(current_prediction[3])
             if np.abs(cpy-neck_y) > 500:
@@ -179,106 +172,59 @@ if __name__ == '__main__':
             kalman.correct(current_measurement)
             debug_image = cv2.circle(debug_image, (cpx, cpy), 8, (255, 0, 0), -1)
 
-
             
-            # # Hands ###############################################################
-            # left_hand_landmarks = results.left_hand_landmarks
-            # right_hand_landmarks = results.right_hand_landmarks
-            # # 왼손
-            # if left_hand_landmarks is not None:
-            #     # 손바닥 중심 계산 
-            #     r_cx, r_cy = calc_palm_moment(debug_image, left_hand_landmarks)
-            #     # 경계사각형의 계산
-            #     # brect = calc_bounding_rect(debug_image, left_hand_landmarks)
-            #     # 그리기 
-            #     debug_image = draw_hands_landmarks(
-            #         debug_image,
-            #         r_cx,
-            #         r_cy,
-            #         left_hand_landmarks,
-            #         # upper_body_only,
-            #         'R',
-            #     )
+            # Hands ###############################################################
+            left_hand_landmarks = results.left_hand_landmarks
+            right_hand_landmarks = results.right_hand_landmarks
+            # 왼손
+            if left_hand_landmarks is not None:
+                # 손바닥 중심 계산 
+                cx, cy = calc_palm_moment(debug_image, left_hand_landmarks)
+                # 경계사각형의 계산
+                # brect = calc_bounding_rect(debug_image, left_hand_landmarks)
+                # 그리기 
+                debug_image = draw_hands_landmarks(
+                    debug_image,
+                    cx,
+                    cy,
+                    left_hand_landmarks,
+                    # upper_body_only,
+                    'R',
+                )
                 
-            #     if np.abs((debug_image[5][1]+debug_image[2][1])-(debug_image[3][1]+debug_image[4][1])) < 10:
-            #         # (검지 + 새끼) - (중지 + 약지)
-            #         # print('손 접힘')
+                if np.abs((debug_image[5][1]+debug_image[2][1])-(debug_image[3][1]+debug_image[4][1])) < 10:
+                    # (검지 + 새끼) - (중지 + 약지)
+                    print('손 접힘')
 
-            #         if debug_image[1][0]-debug_image[2][0] < 0:
-            #             print('왼쪽\n')
-            #             gesture = 2
+                    if debug_image[1][0]-debug_image[2][0] < 0:
+                        print('왼쪽\n')
 
-            #         else:
-            #             if np.abs(debug_image[1][1]-r_cy) < 30:
-            #                 print('손 다 접힘\n')
-            #                 gesture = 4
-            #             else:
-            #                 print('오른쪽\n')
-            #                 gesture = 1
+                    else:
+                        if np.abs(debug_image[1][1]-cy) < 50:
+                            print('손 다 접힘\n')
+                        else:
+                            print('오른쪽\n')
 
-            #     else:
-            #         print('손펼침')
-            #     debug_image = debug_image[0]
+                else:
+                    print('손펼침')
+                debug_image = debug_image[0]
 
-
-            # if gesture == 1:
-
-            #     debug_image = cv.putText(debug_image, "right", (200, 30),
-            #         cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
-            #     gesture = 3
-
-            # if gesture == 2:
-
-            #     debug_image = cv.putText(debug_image, "left", (200, 30),
-            #         cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
-            #     gesture = 3
-
-            # if gesture == 4:
-
-            #     debug_image = cv.putText(debug_image, "center", (200, 30),
-            #         cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
-            #     gesture = 3
-
-
-            # # 오른손 
-            # if right_hand_landmarks is not None:
-            #     # 손바닥 중심 계산 
-            #     l_cx, l_cy = calc_palm_moment(debug_image, right_hand_landmarks)
-            #     # 경계사각형의 계산
-            #     # brect = calc_bounding_rect(debug_image, right_hand_landmarks)
-            #     # 그리기 
-            #     debug_image = draw_hands_landmarks(
-            #         debug_image,
-            #         l_cx,
-            #         l_cy,
-            #         right_hand_landmarks,
-            #         # upper_body_only,
-            #         'L',
-            #     )
-            #     thumb,index,middel, ring, pinky = debug_image[1][1], debug_image[2][1], debug_image[3][1], debug_image[4][1],debug_image[5][1]
-            #     debug_image = debug_image[0]
-            
-            # if np.abs(neck_y-r_cy) < 50:
-            #     if r_cx*r_cy*l_cx*l_cy != 0: 
-            #         if np.abs((index + pinky) - (middel + ring)) > 60:
-            #             print(np.abs((index + pinky) - (middel + ring)))
-            #             debug_image = cv.line(debug_image,(r_cx,r_cy),(l_cx,l_cy),(255, 0, 0), 2)
-            #             # length = np.sqrt((r_cx-l_cx)**2+(r_cy-l_cy)**2)
-            #             # debug_image = cv.putText(debug_image, "length:" + str(length), (10, 30),
-            #             #     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
-            #             zoom = True
-            #             if left_sholder_x < l_cx & r_cx < right_sholder_x:      
-            #                 # print(right_sholder_x, r_cx, l_cx, left_sholder_x)
-            #                 z = 1
-            #                 debug_image = cv.putText(debug_image, "ZOOM IN", (170, 30),
-            #                 cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
-
-            #             else:
-            #                 z = 2
-            #                 debug_image = cv.putText(debug_image, "ZOOM OUT", (170, 30),
-            #                 cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
-
-            #     # length_old = length
+            # 오른손 
+            if right_hand_landmarks is not None:
+                # 손바닥 중심 계산 
+                cx, cy = calc_palm_moment(debug_image, right_hand_landmarks)
+                # 경계사각형의 계산
+                # brect = calc_bounding_rect(debug_image, right_hand_landmarks)
+                # 그리기 
+                debug_image = draw_hands_landmarks(
+                    debug_image,
+                    cx,
+                    cy,
+                    right_hand_landmarks,
+                    # upper_body_only,
+                    'L',
+                )
+                debug_image = debug_image[0]
 
             cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
                        cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)

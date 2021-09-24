@@ -25,8 +25,11 @@ end_time = 0
 r_cx,l_cx=0,0
 zoom = False
 dt = 1/20
-sigmaX, sigmaA = 0.01, 0.015
-cpx, cpy = 0, 0
+sigmaX, sigmaA = 0.0001, 0.0015
+gesture_flag = False
+gesture = 0
+z=0
+cpx, cpy = w_calibration/2,h_calibration/2
 
 
 F = [ [1, dt, 0.5*dt**2, 0, 0, 0],
@@ -53,49 +56,113 @@ kalman = cv2.KalmanFilter(6, 2)   #  state [ x, vx, ax, y, vy, ay]
 kalman.transitionMatrix = np.array(F, np.float32)
 kalman.measurementMatrix = np.array(H, np.float32) # System measurement matrix
 kalman.processNoiseCov = np.array(Q, np.float32)*sigmaA**2 # System process noise covariance
-kalman.measurementNoiseCov = np.array(R, np.float32) * sigmaX**2
+kalman.measurementNoiseCov = np.array(R, np.float32) * sigmaX**1
 
 neck_x, neck_y = w_calibration/2, h_calibration/2
 
 kalman.statePre = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32)
-kalman.statePost = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32)
+kalman.statePost = np.array([[neck_x], [0], [0], [neck_y],[0],[0]], np.float32) 
 
+# cpx, cpy = w_calibration/2, h_calibration/2
 
+# kalman.statePre = np.array([[cpx], [0], [0], [cpy],[0],[0]], np.float32)
+# kalman.statePost = np.array([[cpx], [0], [0], [cpy],[0],[0]], np.float32) 
+
+ges = 1
 
 def goto_human():
-    global point_flag,cpx, cpy,neck_x,neck_y,end_time,zoom
+    global point_flag,cpx, cpy, w_calibration,h_calibration,neck_x,neck_y,end_time,zoom,gesture_flag,gesture,z,ges
     angle_of_x_old, angle_of_y_old = 0, 0
     pp, tp = 0, 0
+    pp_old,tp_old = 0,0
     pan = 0
     predict_x_old = 0
     start = time.time()
     a = 1
     zoom_position = 0 
+    neck = 0
+    run = True
+    # ges = 2
+    parall = False
+    horizon_aov_max = 56.4
+    horizon_aov_min = 3.1
 
     while True:
         lock.acquire()
         if point_flag:
+            # print('working')
             if zoom:
                 if z == 1:
                     move('in',10)
                     # print('zoom in')
+                    time.sleep(1)
                     stop('in')
 
 
                 elif z == 2:
                     move('out',10)
+                    time.sleep(1)
+
                     # print('zoom out')
                     stop('out')
 
                 # zoom = False
+                r_cx,l_cy = 0,0
                 zoom_position = int(get_position()[2])
-                r_cx = 0
+
+                z = 3
+                run = True
                 zoom = False
 
-            else:
 
-                pan, tilt = np.rad2deg(calculate_alpha(cpx,zoom_position)),np.rad2deg(calculate_beta(cpy,zoom_position))
+            if gesture_flag:
+                run = False
+                # panpos = int((get_position()[0])/100)
+                th_w = float(horizon_aov_max-(horizon_aov_max-horizon_aov_min)/65535*zoom_position)
+                # print(th_w)
+                if ges == 1:
+                    moveTo(int(pan*100),int(tilt*100),0,0)
+                    ges = 2
+
+                if gesture == 1:
+                    alpha = int(th_w * 1/5)
+                    moveTo(pan+int(alpha*100),int(tilt*100),10,0)
+                    # 수정함. 문제 있으면 바꿀것.(pan 값 빼기)
+                    print("오른쪽")
+                    neck = alpha
+                    parall = True
+
+                if gesture == 2:
+                    alpha = -int(th_w * 1/5)
+                    # pan_alpha=360+alpha
+                    moveTo(pan+int((360+alpha)*100),int(tilt*100),10,0)
+                    print("왼쪽")
+                    neck = alpha
+                    parall = True
+
+                if gesture == 4:
+                    # run = False
+                    # moveTo(int((pan+neck)*100),int(tilt*100),5,0)
+                    # print(parall)
+                    parall = True
+                    gesture = 3
+
+                run = True
+                gesture_flag = False
+
+            if run:
+                # if parall:
+                #     neck_x += neck
+                
+                pan, tilt = np.rad2deg(calculate_alpha(neck_x,zoom_position)),np.rad2deg(calculate_beta(neck_y,zoom_position))
                 # TO CALCULATE OF MOTOR SPEED
+                if parall:
+                    if gesture == 4:
+                        pan -= neck
+                        parall = False
+                        # pass
+                    else:
+                        pan += neck
 
                 if a == 1:
                     moveTo(int(pan*100),int(tilt*100),0,0)
@@ -103,45 +170,52 @@ def goto_human():
                     a = 2
 
                 #
-                pp, tp = int(np.abs(pan)), int(np.abs(tilt))
+                pp, tp = int(np.abs(pan)), int(np.abs(tilt)*0.3)
                 # print('pp,tp:',pp,tp)
 
+                if np.abs(pp_old - pp) != 0 or np.abs(tp_old - tp) != 0:
 
-                if pan < 0:
-                    # print('\npan < 0\n')
-                    if tilt > 0:
-                        move_pan_tilt('right', 'up', pp, tp)
+                    if pan < 0:
+                        # print('\npan < 0\n')
+                        if tilt > 0:
+                            move_pan_tilt('right', 'up', pp, tp)
 
-                     # 팬 값이 적당히 중앙에 위치하면 모터 stop
-                    elif np.abs(pan) < 3:
-                        # print('neck is on center')
-                        moveTo(int(pan*100),int(tilt*100),0,0)
+                         # 팬 값이 적당히 중앙에 위치하면 모터 stop
+                        elif np.abs(pan) < 3:
+                            # print('neck is on center')
+                            moveTo(int(pan*100),int(tilt*100),0,0)
 
-                    else:
-                        move_pan_tilt('right', 'down', pp, tp)
-
-
-                elif pan > 0:
-                    # print('\npan > 0\n')
-                    if tilt > 0:
-                        move_pan_tilt('left', 'up',pp, tp)
-
-                    # 팬 값이 적당히 중앙에 위치하면 모터 stop
-                    elif np.abs(pan) < 3:
-                        # print('neck is on center')
-                        moveTo(int(pan*100),int(tilt*100),0,0)
-                        
-
-                    else:
-                        move_pan_tilt('left', 'down', pp, tp)
+                        else:
+                            move_pan_tilt('right', 'down', pp, tp)
 
 
-                elif np.abs(pan- w_calibration/2) > 10:
-                    moveTo(int(pan*100), int(tilt*100), 0, 0)
-                    # print('\nstop\n')
+                    elif pan > 0:
+                        # print('\npan > 0\n')
+                        if tilt > 0:
+                            move_pan_tilt('left', 'up',pp, tp)
+
+                        # 팬 값이 적당히 중앙에 위치하면 모터 stop
+                        elif np.abs(pan) < 3:
+                            # print('neck is on center')
+                            moveTo(int(pan*100),int(tilt*100),0,0)
+                            
+
+                        else:
+                            move_pan_tilt('left', 'down', pp, tp)
+
+
+                    elif np.abs(pan - w_calibration/2) < 10:
+                        moveTo(int(pan*100), int(tilt*100), 0, 5)
+                        # print('\nstop\n')
                 
+                    # print(pp,tp)
+                    pp_old, tp_old = pp, tp
+                        # print(pp_old,tp_old)
 
-                angle_of_x_old, angle_of_y_old = pan, tilt
+                else:
+                    print('')
+                    # a=1
+    
 
         lock.release()
 
@@ -186,8 +260,13 @@ if __name__ == '__main__':
     i = 1
     r_cx,l_cx = 0,0
     r_cy,l_cy = 0,0
+    cpx, cpy = w_calibration/2,h_calibration/2
     length_old = 0
     length = 0
+
+    # fourcc = cv2.VideoWriter_fourcc(*'DIVX')
+    # fps = 20
+    # out = cv2.VideoWriter('save_video/얼굴 탐지.avi', fourcc, fps, (1527, 833))
 
     # upper_body_only = args.upper_body_only
     model_complexity = args.model_complexity
@@ -212,7 +291,9 @@ if __name__ == '__main__':
     initial_position = get_position()
     if initial_position != (0, 0, 0):
         goto_origin(0,100,0,100)
-        # stop('out')
+        # http://192.168.0.9/cgi-bin/control/zf_control.cgi?id=admin&passwd=admin&action=setzfmove&zoom=out&zoompeed=50
+        time.sleep(3)
+        stop('out')
         time.sleep(3)
 
     human = threading.Thread(target=goto_human)
@@ -255,15 +336,13 @@ if __name__ == '__main__':
             pose_landmarks = results.pose_landmarks
             if pose_landmarks is not None:
                 # 경계 사각형의 계산
-                brect = calc_bounding_rect(debug_image, pose_landmarks)
                 # 그리기 
                 debug_image = draw_pose_landmarks(
                     debug_image,
                     pose_landmarks,
                     # upper_body_only,
                 )
-                pose = draw_bounding_rect(use_brect, debug_image, brect)
-                debug_image = pose[0]
+                pose = debug_image
                 right_sholder_x, right_sholder_y, left_sholder_x, left_sholder_y = pose[1], pose[2], pose[3], pose[4]
 
                 # 목 위치 
@@ -272,16 +351,20 @@ if __name__ == '__main__':
                 neck_x,neck_y = int((pose[1]+pose[3])/2) ,int((pose[2]+pose[4])/2) 
                 end_time = time.time()-start_camera
                 # print(end_time)
-                cv.circle(debug_image, (neck_x, neck_y), 5, (0, 0, 255), 2)
+                debug_image = cv.circle(pose[0], (neck_x, neck_y), 5, (0, 0, 255), 2)
 
 
             current_prediction = kalman.predict() # start kalman filter <predict>
             cpx, cpy = int(current_prediction[0]), int(current_prediction[3])
+            # debug_image = cv2.circle(debug_image, (cpx, cpy), 8, (255, 0, 0), -1)
             if np.abs(cpy-neck_y) > 500:
                 cpy = int(h_calibration/2)
             current_measurement = np.array([neck_x, neck_y], np.float32)
             kalman.correct(current_measurement)
-            debug_image = cv2.circle(debug_image, (cpx, cpy), 8, (255, 0, 0), -1)
+            # print(current_measurement)
+            # cpx, cpy = int(current_measurement[0]), int(current_measurement[1])
+            # print(cpx,cpy)
+            # debug_image = cv2.circle(debug_image, (cpx, cpy), 8, (255, 0, 0), -1)
 
             
             # Hands ###############################################################
@@ -293,8 +376,6 @@ if __name__ == '__main__':
                 # 손바닥 중심 계산 
                 l_cx, l_cy = calc_palm_moment(debug_image, left_hand_landmarks)
                 # 경계사각형의 계산
-                # brect = calc_bounding_rect(debug_image, left_hand_landmarks)
-                # 그리기 
                 debug_image = draw_hands_landmarks(
                     debug_image,
                     l_cx,
@@ -303,7 +384,50 @@ if __name__ == '__main__':
                     # upper_body_only,
                     'R',
                 )
-                debug_image = draw_bounding_rect(use_brect, debug_image, brect)[0]
+                
+
+                if np.abs(neck_y-l_cy) < 50 :
+                    if np.abs((debug_image[2][1] + debug_image[5][1]) - (debug_image[3][1] + debug_image[4][1])) < 10:
+                        # (검지 + 새끼) - (중지 + 약지)
+                        gesture_flag = True
+                        # ges = 1
+                        # 거울모드라 이게 맞음.
+                        if debug_image[1][0]-debug_image[2][0] < 0:
+                            # 엄지가 검지보다 왼쪽에 있으면 죄회전
+                            # 좌회전
+                            # if np.abs(debug_image[1][1]-l_cy) < 30:
+                                # gesture = 4
+                            # else:
+                            gesture = 1
+
+                        else:
+                            gesture = 2
+                    else:
+                        if debug_image[1][0]-debug_image[5][0] < 0:
+                        # 엄지가 새끼보다 작아야 손 펼친것.
+                            print('손펼침')
+                            gesture = 4
+                        else:
+                            pass
+                debug_image = debug_image[0]
+
+            if gesture == 1:
+
+                debug_image = cv.putText(debug_image, "right", (200, 30),
+                    cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
+                gesture = 3
+
+            if gesture == 2:
+
+                debug_image = cv.putText(debug_image, "left", (200, 30),
+                    cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
+                gesture = 3
+
+            if gesture == 4:
+
+                debug_image = cv.putText(debug_image, "center", (200, 30),
+                    cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
+                gesture = 3
 
             # 오른손 
             if right_hand_landmarks is not None:
@@ -320,20 +444,24 @@ if __name__ == '__main__':
                     # upper_body_only,
                     'L',
                 )
-                draw = draw_bounding_rect(use_brect, debug_image, brect)
-                debug_image = draw[0]
+                thumb,index,middel, ring, pinky = debug_image[1][1], debug_image[2][1], debug_image[3][1], debug_image[4][1],debug_image[5][1]
+                debug_image = debug_image[0]
+
 
             # print(r_cx,l_cx)
             # if 
             # debug_image=cv.circle(debug_image, (int((r_cx+l_cx)/2), int((r_cy+l_cy)/2)),5, (0, 0, 255), 2)
-            if np.abs(neck_y-r_cy) < 50:
+            if np.abs(neck_y-r_cy) < 20 and np.abs(neck_y-l_cy) < 20:
+                #손바닥을 보일때만 작동할것! 주먹쥐거나 그러면 작동하지 않음.
                 if r_cx*r_cy*l_cx*l_cy != 0: 
-                    debug_image = cv.line(debug_image,(r_cx,r_cy),(l_cx,l_cy),(255, 0, 0), 2)
-                    # length = np.sqrt((r_cx-l_cx)**2+(r_cy-l_cy)**2)
-                    # debug_image = cv.putText(debug_image, "length:" + str(length), (10, 30),
-                    #     cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
+                    # if np.abs((index + pinky) - (middel + ring)) > 10:
+                        # print(np.abs((index + pinky) - (middel + ring)))
+                        # 만약 엄지 제외한 손가락의 y값 을 모두 더했을 때 0이 아니면 손바닥임.
+                    debug_image = cv.line(debug_image,(r_cx,r_cy),(l_cx,l_cy),(0, 255, 0), 2)
+
                     zoom = True
-                    if left_sholder_x < l_cx & r_cx < right_sholder_x:      
+                    if left_sholder_x < l_cx & r_cx < right_sholder_x:   
+                    # if np.abs(right_sholder_x - left_sholder_x ) > np.abs(r_cx - l_cx):
                         # print(right_sholder_x, r_cx, l_cx, left_sholder_x)
                         z = 1
                         debug_image = cv.putText(debug_image, "ZOOM IN", (10, 30),
@@ -344,12 +472,14 @@ if __name__ == '__main__':
                         debug_image = cv.putText(debug_image, "ZOOM OUT", (10, 30),
                         cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
 
-                length_old = length
+                # length_old = length
 
             # cv.putText(debug_image, "FPS:" + str(display_fps), (10, 30),
             #            cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 255, 0), 2, cv.LINE_AA)
             # 화면 반영  #############################################################
-            cv.imshow('MediaPipe Holistic', debug_image)
+            # out.write(debug_image)
+            debug_image = cv.imshow('MediaPipe Holistic', debug_image)
+            # out.write(debug_image)
 
 
             # 키처리 (ESC：종료) #################################################
@@ -358,10 +488,12 @@ if __name__ == '__main__':
                 stop('out')
                 time.sleep(0.3)
                 goto_origin(0,100,0,100)
+                time.sleep(0.3)
                 break
 
             # # 화면 반영  #############################################################
             # cv.imshow('MediaPipe Holistic', debug_image)
 
+    # out.release()
     cap.release()
     cv.destroyAllWindows()

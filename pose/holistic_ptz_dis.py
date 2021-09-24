@@ -26,10 +26,10 @@ zoom = False
 gesture_flag = False
 gesture = 0
 z=0
-ges = 2
+# ges = 2
 
 def goto_human():
-    global point_flag,cpx, cpy,neck_x,neck_y,end_time,zoom,z,gesture_flag,gesture,ges
+    global point_flag,cpx, cpy,neck_x,neck_y,end_time,zoom,z,gesture_flag,gesture
     angle_of_x_old, angle_of_y_old = 0, 0
     pp, tp = 0, 0
     pp_old,tp_old = 0,0
@@ -40,7 +40,7 @@ def goto_human():
     zoom_position = 0 
     neck=0
     run = True
-    # ges = 2
+    ges = 2
     parall = False
 
     while True:
@@ -78,7 +78,7 @@ def goto_human():
                     # run = False
                     print("오른쪽")
                     # run = False
-                    move('left',10)
+                    move('left',30)
                     stop('left')
                     parall = True
 
@@ -86,7 +86,7 @@ def goto_human():
                     # run = False
                     print("왼쪽")
                     # run = False
-                    move('right',10)
+                    move('right',30)
                     stop('right')
                     parall = True
 
@@ -95,14 +95,14 @@ def goto_human():
                     parall = False
 
                 neck = np.rad2deg(calculate_alpha(neck_x,zoom_position))
-                print(neck)
+                # print(neck)
                 # parall = True
                 run = True
                 gesture_flag = False
 
             if run:
-                # if parall:
-                #     neck_x += neck
+                if parall:
+                    neck_x += neck
 
                 pan, tilt = np.rad2deg(calculate_alpha(neck_x,zoom_position)),np.rad2deg(calculate_beta(neck_y,zoom_position))
                 # TO CALCULATE OF MOTOR SPEED
@@ -149,8 +149,8 @@ def goto_human():
                             move_pan_tilt('left', 'down', pp, tp)
 
 
-                    elif np.abs(pan - w_calibration/2) > 10:
-                        moveTo(int(pan*100), int(tilt*100), 0, 0)
+                    elif np.abs(pan - w_calibration/2) < 10:
+                        moveTo(int(pan*100), int(tilt*100), 0, 5)
                         # print('\nstop\n')
                 
                     # print(pp,tp)
@@ -331,11 +331,7 @@ if __name__ == '__main__':
 
                 if np.abs((debug_image[5][1] + debug_image[2][1]) - (debug_image[3][1] + debug_image[4][1])) < 20:
                     # (검지 + 새끼) - (중지 + 약지)
-                    # print(np.abs((debug_image[5][1]+debug_image[2][1])-(debug_image[3][1]+debug_image[4][1])))
-                    # print('손 접힘')
-                    # if np.abs(l_cy-debug_image[4][1]) > 2:
                     gesture_flag = True
-                    # ges = 1
                     # 거울모드라 이게 맞음.
                     if debug_image[1][0]-debug_image[2][0] < 0:
                         # 좌회전
@@ -345,9 +341,6 @@ if __name__ == '__main__':
                             gesture = 1
 
                     else:
-                        # if np.abs(debug_image[1][1]-l_cy) < 50:
-                        #     gesture = 4
-                        
                         gesture = 2
                 else:
                     print('손펼침')
@@ -372,9 +365,6 @@ if __name__ == '__main__':
                 gesture = 3
 
 
-            # print(r_cx,l_cx)
-            # if 
-            # debug_image=cv.circle(debug_image, (int((r_cx+l_cx)/2), int((r_cy+l_cy)/2)),5, (0, 0, 255), 2)
             if np.abs(neck_y-r_cy) < 50 & np.abs(neck_y-l_cy) < 50:
                 if r_cx*r_cy*l_cx*l_cy != 0: 
                     debug_image = cv.line(debug_image,(r_cx,r_cy),(l_cx,l_cy),(255, 0, 0), 2)
@@ -406,8 +396,6 @@ if __name__ == '__main__':
                 goto_origin(0,100,0,100)
                 break
 
-            # # 화면 반영  #############################################################
-            # cv.imshow('MediaPipe Holistic', debug_image)
 
     cap.release()
     cv.destroyAllWindows()
